@@ -1,0 +1,17 @@
+<header class="flex h-16 shrink-0 items-center gap-2">
+  <div class="flex items-center gap-2 px-4">
+    <button hlmSidebarTrigger></button>
+    <hlm-separator orientation="vertical" class="mr-2 data-[orientation=vertical]:h-4" />
+    <nav hlmBreadcrumb>
+      <ol hlmBreadcrumbList>
+        <li hlmBreadcrumbItem class="hidden sm:block">
+          <a hlmBreadcrumbLink link="/">open-crm</a>
+        </li>
+        <li hlmBreadcrumbSeparator class="hidden sm:block"></li>
+        <li hlmBreadcrumbItem>
+          <span hlmBreadcrumbPage>{{ page() }}</span>
+        </li>
+      </ol>
+    </nav>
+  </div>
+</header>

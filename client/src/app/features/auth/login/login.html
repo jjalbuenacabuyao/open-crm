@@ -1,0 +1,53 @@
+<app-auth-layout heading="Welcome back" subheading="Sign in to your open-crm workspace.">
+  @if (serverError()) {
+    <hlm-alert variant="destructive" class="mb-4">
+      <p hlmAlertTitle>Could not sign you in</p>
+      <p hlmAlertDescription>{{ serverError() }}</p>
+    </hlm-alert>
+  }
+
+  <form class="flex flex-col gap-4" (submit)="onSubmit(); $event.preventDefault()">
+    <div hlmField>
+      <label hlmFieldLabel for="email">Email</label>
+      <input
+        hlmInput
+        id="email"
+        type="email"
+        autocomplete="email"
+        placeholder="you@company.com"
+        [formField]="loginForm.email"
+      />
+      @for (error of loginForm.email().errors(); track error.kind) {
+        <hlm-field-error [validator]="error.kind">{{ error.message }}</hlm-field-error>
+      }
+    </div>
+
+    <div hlmField>
+      <label hlmFieldLabel for="password">Password</label>
+      <input
+        hlmInput
+        id="password"
+        type="password"
+        autocomplete="current-password"
+        [formField]="loginForm.password"
+      />
+      @for (error of loginForm.password().errors(); track error.kind) {
+        <hlm-field-error [validator]="error.kind">{{ error.message }}</hlm-field-error>
+      }
+    </div>
+
+    <button hlmBtn type="submit" class="mt-2 w-full" [disabled]="submitting()">
+      @if (submitting()) {
+        <hlm-spinner />
+      }
+      Sign in
+    </button>
+  </form>
+
+  <p authFooter class="text-muted-foreground text-sm">
+    Don't have an account?
+    <a routerLink="/auth/signup" class="text-foreground font-medium underline underline-offset-4">
+      Create one
+    </a>
+  </p>
+</app-auth-layout>

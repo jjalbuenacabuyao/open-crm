@@ -1,0 +1,26 @@
+<main class="bg-muted/40 flex min-h-dvh flex-col items-center justify-center gap-6 px-4 py-10">
+  <div class="flex items-center gap-2">
+    <span
+      class="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-md text-sm font-semibold"
+      aria-hidden="true"
+    >
+      C
+    </span>
+    <span class="text-lg font-semibold tracking-tight">open-crm</span>
+  </div>
+
+  <hlm-card class="w-full max-w-sm">
+    <hlm-card-header>
+      <h1 hlmCardTitle>{{ heading() }}</h1>
+      <p hlmCardDescription>{{ subheading() }}</p>
+    </hlm-card-header>
+
+    <div hlmCardContent>
+      <ng-content />
+    </div>
+
+    <hlm-card-footer class="justify-center">
+      <ng-content select="[authFooter]" />
+    </hlm-card-footer>
+  </hlm-card>
+</main>

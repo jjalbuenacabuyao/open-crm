@@ -1,0 +1,29 @@
+<hlm-sidebar variant="inset" collapsible="icon">
+  <hlm-sidebar-header>
+    <ul hlmSidebarMenu>
+      <li hlmSidebarMenuItem>
+        <a hlmSidebarMenuButton size="lg" routerLink="/">
+          <div
+            class="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg"
+          >
+            <ng-icon name="lucideCommand" class="text-base" />
+          </div>
+          <div class="grid flex-1 text-left text-sm leading-tight">
+            <span class="truncate font-medium">open-crm</span>
+            <span class="truncate text-xs">Workspace</span>
+          </div>
+        </a>
+      </li>
+    </ul>
+  </hlm-sidebar-header>
+
+  <hlm-sidebar-content>
+    <app-nav-main [items]="navMain" />
+    <app-nav-workspaces [workspaces]="workspaces" />
+    <app-nav-secondary class="mt-auto" [items]="navSecondary" />
+  </hlm-sidebar-content>
+
+  <hlm-sidebar-footer>
+    <app-nav-user />
+  </hlm-sidebar-footer>
+</hlm-sidebar>

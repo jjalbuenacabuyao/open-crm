@@ -1,0 +1,109 @@
+<app-auth-layout
+  heading="Create your account"
+  subheading="Start managing your pipeline in open-crm."
+>
+  @if (confirmationEmail()) {
+    <hlm-alert>
+      <p hlmAlertTitle>Confirm your email</p>
+      <p hlmAlertDescription>
+        We sent a confirmation link to {{ confirmationEmail() }}. Open it to finish setting up your
+        account, then sign in.
+      </p>
+    </hlm-alert>
+  } @else {
+    @if (serverError()) {
+      <hlm-alert variant="destructive" class="mb-4">
+        <p hlmAlertTitle>Could not create your account</p>
+        <p hlmAlertDescription>{{ serverError() }}</p>
+      </hlm-alert>
+    }
+
+    <form class="flex flex-col gap-4" (submit)="onSubmit(); $event.preventDefault()">
+      <div class="grid grid-cols-2 gap-3">
+        <div hlmField>
+          <label hlmFieldLabel for="firstName">First name</label>
+          <input
+            hlmInput
+            id="firstName"
+            autocomplete="given-name"
+            [formField]="signupForm.firstName"
+          />
+          @for (error of signupForm.firstName().errors(); track error.kind) {
+            <hlm-field-error [validator]="error.kind">{{ error.message }}</hlm-field-error>
+          }
+        </div>
+
+        <div hlmField>
+          <label hlmFieldLabel for="lastName">Last name</label>
+          <input
+            hlmInput
+            id="lastName"
+            autocomplete="family-name"
+            [formField]="signupForm.lastName"
+          />
+          @for (error of signupForm.lastName().errors(); track error.kind) {
+            <hlm-field-error [validator]="error.kind">{{ error.message }}</hlm-field-error>
+          }
+        </div>
+      </div>
+
+      <div hlmField>
+        <label hlmFieldLabel for="email">Email</label>
+        <input
+          hlmInput
+          id="email"
+          type="email"
+          autocomplete="email"
+          placeholder="you@company.com"
+          [formField]="signupForm.email"
+        />
+        @for (error of signupForm.email().errors(); track error.kind) {
+          <hlm-field-error [validator]="error.kind">{{ error.message }}</hlm-field-error>
+        }
+      </div>
+
+      <div hlmField>
+        <label hlmFieldLabel for="password">Password</label>
+        <input
+          hlmInput
+          id="password"
+          type="password"
+          autocomplete="new-password"
+          [formField]="signupForm.password"
+        />
+        <p hlmFieldDescription>At least 8 characters.</p>
+        @for (error of signupForm.password().errors(); track error.kind) {
+          <hlm-field-error [validator]="error.kind">{{ error.message }}</hlm-field-error>
+        }
+      </div>
+
+      <div hlmField>
+        <label hlmFieldLabel for="confirmPassword">Confirm password</label>
+        <input
+          hlmInput
+          id="confirmPassword"
+          type="password"
+          autocomplete="new-password"
+          [formField]="signupForm.confirmPassword"
+        />
+        @for (error of signupForm.confirmPassword().errors(); track error.kind) {
+          <hlm-field-error [validator]="error.kind">{{ error.message }}</hlm-field-error>
+        }
+      </div>
+
+      <button hlmBtn type="submit" class="mt-2 w-full" [disabled]="submitting()">
+        @if (submitting()) {
+          <hlm-spinner />
+        }
+        Create account
+      </button>
+    </form>
+  }
+
+  <p authFooter class="text-muted-foreground text-sm">
+    Already have an account?
+    <a routerLink="/auth/login" class="text-foreground font-medium underline underline-offset-4">
+      Sign in
+    </a>
+  </p>
+</app-auth-layout>

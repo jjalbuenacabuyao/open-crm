@@ -1,0 +1,53 @@
+<div class="grid auto-rows-min gap-4 md:grid-cols-3">
+  <hlm-card class="md:col-span-2">
+    <hlm-card-header>
+      <h1 hlmCardTitle>
+        Welcome back{{ profile.displayName() ? ', ' + profile.displayName() : '' }}
+      </h1>
+      <p hlmCardDescription>Your open-crm workspace is ready.</p>
+    </hlm-card-header>
+
+    <div hlmCardContent>
+      @if (profile.profile.isLoading()) {
+        <div class="text-muted-foreground flex items-center gap-2 text-sm">
+          <hlm-spinner />
+          Loading your profile…
+        </div>
+      } @else if (profile.profile.error()) {
+        <p class="text-destructive text-sm">
+          Could not load your profile. Check that the API is running and that API_BASE_URL in
+          client/.env points at it.
+        </p>
+      } @else if (profile.profile.value(); as user) {
+        <dl class="grid gap-2 text-sm">
+          <div class="flex justify-between gap-4">
+            <dt class="text-muted-foreground">Name</dt>
+            <dd class="font-medium">{{ user.firstName }} {{ user.lastName }}</dd>
+          </div>
+          <div class="flex justify-between gap-4">
+            <dt class="text-muted-foreground">Email</dt>
+            <dd class="font-medium">{{ user.email }}</dd>
+          </div>
+          <div class="flex justify-between gap-4">
+            <dt class="text-muted-foreground">User ID</dt>
+            <dd class="font-mono text-xs">{{ user.id }}</dd>
+          </div>
+        </dl>
+      }
+    </div>
+  </hlm-card>
+
+  <hlm-card>
+    <hlm-card-header>
+      <h2 hlmCardTitle>Next up</h2>
+      <p hlmCardDescription>Nothing here yet.</p>
+    </hlm-card-header>
+    <div hlmCardContent>
+      <p class="text-muted-foreground text-sm">
+        Contacts, companies and deals are stubbed in the sidebar and not routed yet.
+      </p>
+    </div>
+  </hlm-card>
+</div>
+
+<div class="bg-muted/50 min-h-[40vh] flex-1 rounded-xl"></div>
