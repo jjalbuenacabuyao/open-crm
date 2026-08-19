@@ -11,12 +11,9 @@ import (
 // route layer reads handlers off it rather than constructing its own.
 type Container struct {
 	DB *gorm.DB
-
 	Supabase    config.Supabase
 	CORSOrigins []string
-
 	UserRepository repository.UserRepository
-
 	AuthHandler *handler.AuthHandler
 }
 

@@ -14,6 +14,6 @@ type Base struct {
 	ID          uuid.UUID      `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
 	CreatedAt   time.Time      `json:"createdAt"`
 	UpdatedAt   time.Time      `json:"updatedAt"`
-	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
-	CreatedByID uuid.UUID      `gorm:"type:uuid" json:"-"`
+	DeletedAt   gorm.DeletedAt `gorm:"index" json:"deletedAt"`
+	CreatedByID uuid.UUID      `gorm:"type:uuid" json:"createdById"`
 }

@@ -1,48 +1,29 @@
 {
-  "compileOnSave": false,
+  "include": ["**/*.ts", "**/*.tsx", "eslint.config.js", "prettier.config.js", "vite.config.js"],
+  
   "compilerOptions": {
-    "noImplicitOverride": true,
-    "noPropertyAccessFromIndexSignature": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "skipLibCheck": true,
-    "isolatedModules": true,
-    "experimentalDecorators": true,
-    "importHelpers": true,
     "target": "ES2022",
-    "module": "preserve",
+    "jsx": "react-jsx",
+    "module": "ESNext",
     "paths": {
-      "@spartan-ng/helm/button": ["./src/app/_shared/ui/button/src/index.ts"],
-      "@spartan-ng/helm/utils": ["./src/app/_shared/ui/utils/src/index.ts"],
-      "@spartan-ng/helm/input": ["./src/app/_shared/ui/input/src/index.ts"],
-      "@spartan-ng/helm/label": ["./src/app/_shared/ui/label/src/index.ts"],
-      "@spartan-ng/helm/field": ["./src/app/_shared/ui/field/src/index.ts"],
-      "@spartan-ng/helm/separator": ["./src/app/_shared/ui/separator/src/index.ts"],
-      "@spartan-ng/helm/card": ["./src/app/_shared/ui/card/src/index.ts"],
-      "@spartan-ng/helm/spinner": ["./src/app/_shared/ui/spinner/src/index.ts"],
-      "@spartan-ng/helm/alert": ["./src/app/_shared/ui/alert/src/index.ts"],
-      "@spartan-ng/helm/sidebar": ["./src/app/_shared/ui/sidebar/src/index.ts"],
-      "@spartan-ng/helm/sheet": ["./src/app/_shared/ui/sheet/src/index.ts"],
-      "@spartan-ng/helm/skeleton": ["./src/app/_shared/ui/skeleton/src/index.ts"],
-      "@spartan-ng/helm/tooltip": ["./src/app/_shared/ui/tooltip/src/index.ts"],
-      "@spartan-ng/helm/collapsible": ["./src/app/_shared/ui/collapsible/src/index.ts"],
-      "@spartan-ng/helm/dropdown-menu": ["./src/app/_shared/ui/dropdown-menu/src/index.ts"],
-      "@spartan-ng/helm/avatar": ["./src/app/_shared/ui/avatar/src/index.ts"],
-      "@spartan-ng/helm/breadcrumb": ["./src/app/_shared/ui/breadcrumb/src/index.ts"]
-    }
-  },
-  "angularCompilerOptions": {
-    "enableI18nLegacyMessageIdFormat": false,
-    "strictInjectionParameters": true,
-    "strictInputAccessModifiers": true
-  },
-  "files": [],
-  "references": [
-    {
-      "path": "./tsconfig.app.json"
+      "#/*": ["./src/*"],
+      "@/*": ["./src/*"]
     },
-    {
-      "path": "./tsconfig.spec.json"
-    }
-  ]
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"],
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "noEmit": true,
+
+    /* Linting */
+    "skipLibCheck": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true
+  }
 }

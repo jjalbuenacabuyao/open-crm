@@ -1,11 +1,17 @@
 #!/usr/bin/env bash
 #
-# Runs the whole stack for development: the Go API and the Angular dev server,
-# with interleaved, labelled output. Ctrl+C stops both.
+# Runs the whole stack for development: the Go API and the TanStack Start dev
+# server, with interleaved, labelled output. Ctrl+C stops both.
 #
-# Everything you open in a browser is http://localhost:4200 — `ng serve` owns
-# that port and proxies /api to the Go server (client/proxy.conf.json), so the
-# API is same-origin and CORS never comes into play locally.
+# Both halves live-reload. The API runs under air (`go tool air`, pinned in
+# server/go.mod and configured by server/.air.toml), so editing Go rebuilds and
+# restarts it; Vite already watches the client.
+#
+# The client is served from http://localhost:3000 and calls the API directly on
+# its own port — there is no dev proxy, so every /api/v1 request is
+# cross-origin and CORS_ORIGINS in server/.env has to list the client origin.
+# That agreement is checked below, because getting it wrong surfaces in the
+# browser as an opaque "network error" rather than anything readable.
 #
 #   ./dev.sh
 #
@@ -14,11 +20,10 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLIENT="$ROOT/client"
 SERVER="$ROOT/server"
-CLIENT_PORT=4200
 
 # Job control, so each service lands in its own process group and cleanup can
-# signal the whole tree. Without it, killing `pnpm` orphans the `ng serve` node
-# process and port 4200 stays bound.
+# signal the whole tree. Without it, killing `pnpm` orphans the `vite dev` node
+# process and the client port stays bound.
 set -m
 
 if [[ -t 1 && -z "${NO_COLOR:-}" ]]; then
@@ -42,8 +47,14 @@ need go "Install Go, or see server/ for the required version."
 need pnpm "Install pnpm — npm/yarn are not supported here (see client/package.json packageManager)."
 
 [[ -d "$CLIENT/node_modules" ]] || die "client/node_modules is missing. Run: (cd client && pnpm install)"
-[[ -f "$CLIENT/.env" ]] || die "client/.env is missing. Run: cp client/.env.example client/.env  (then fill in the Supabase values)"
 [[ -f "$SERVER/.env" ]] || die "server/.env is missing. Run: cp server/.env.example server/.env  (then fill in the Supabase and Postgres values)"
+
+# The port lives in the client's dev script (`vite dev --port N`) rather than
+# here, so it stays right if that script changes.
+CLIENT_PORT="$(grep -oE '"dev"[[:space:]]*:[[:space:]]*"[^"]*--port[[:space:]]+[0-9]+' "$CLIENT/package.json" 2>/dev/null |
+	grep -oE '[0-9]+$' | head -1)"
+CLIENT_PORT="${CLIENT_PORT:-3000}"
+CLIENT_ORIGIN="http://localhost:$CLIENT_PORT"
 
 # Reads a key from a .env file. Last assignment wins, quotes and CR stripped.
 env_value() {
@@ -55,18 +66,23 @@ env_value() {
 API_PORT="$(env_value "$SERVER/.env" APP_PORT)"
 API_PORT="${API_PORT:-8080}"
 
-# The proxy target and APP_PORT have to agree or every /api call from the
-# browser dead-ends, which surfaces as a confusing 500 rather than a clear error.
-PROXY_PORT="$(grep -oE '"target"[^"]*"[^"]*:[0-9]+' "$CLIENT/proxy.conf.json" 2>/dev/null |
-	grep -oE '[0-9]+$' | head -1)"
-if [[ -n "$PROXY_PORT" && "$PROXY_PORT" != "$API_PORT" ]]; then
-	die "port mismatch: server/.env APP_PORT=$API_PORT but client/proxy.conf.json targets :$PROXY_PORT.
-       Make them match, or the browser cannot reach the API through :$CLIENT_PORT."
-fi
+# No dev proxy means the browser talks to the API cross-origin, so the API has
+# to allow the client's origin explicitly. An unset CORS_ORIGINS is not a free
+# pass either — config.LoadCORSOrigins falls back to a single hard-coded origin.
+CORS_ORIGINS="$(env_value "$SERVER/.env" CORS_ORIGINS)"
+# Normalised the same way the server does it: whitespace out, trailing slashes
+# off, so a cosmetic difference does not read as a misconfiguration.
+CORS_LIST=",$(printf '%s' "${CORS_ORIGINS// /}" | sed 's:/*,:,:g; s:/*$::'),"
+case "$CORS_LIST" in
+	*",$CLIENT_ORIGIN,"* | *",*,"*) ;;
+	*) die "CORS: server/.env CORS_ORIGINS is '${CORS_ORIGINS:-<unset>}', which does not include $CLIENT_ORIGIN.
+       Every API call from the browser will fail as an opaque network error.
+       Fix: set CORS_ORIGINS=$CLIENT_ORIGIN in server/.env" ;;
+esac
 
 port_busy() { (exec 3<>"/dev/tcp/127.0.0.1/$1") >/dev/null 2>&1; }
 
-port_busy "$CLIENT_PORT" && die "port $CLIENT_PORT is already in use (the Angular dev server needs it).
+port_busy "$CLIENT_PORT" && die "port $CLIENT_PORT is already in use (the Vite dev server needs it).
        Find it with: lsof -i :$CLIENT_PORT"
 port_busy "$API_PORT" && die "port $API_PORT is already in use (the Go API needs it).
        Find it with: lsof -i :$API_PORT"
@@ -79,15 +95,17 @@ if ! (exec 3<>"/dev/tcp/$DB_HOST/$DB_PORT") >/dev/null 2>&1; then
 	warn "nothing is listening on $DB_HOST:$DB_PORT — the API will exit if it cannot migrate."
 fi
 
-if grep -q 'your-project-ref' "$CLIENT/.env" "$SERVER/.env" 2>/dev/null; then
-	warn "Supabase placeholders are still present in .env — sign-in will fail until you fill them in."
+# The API refuses to boot without a usable Supabase project URL, so catch the
+# untouched template here rather than in a stack trace.
+if grep -q 'your-project-ref' "$SERVER/.env" 2>/dev/null; then
+	warn "Supabase placeholders are still present in server/.env — the API will exit on an invalid configuration."
 fi
 
 # ------------------------------------------------------------------- build ---
 
-# Built up front rather than using `go run`: a compile error should fail here
-# with a clean message instead of racing the dev server, and the binary gives us
-# a directly signalable PID (`go run` would leave its child behind on Ctrl+C).
+# The API runs under air (`go tool air`) for live reload, and air would happily
+# start up and just print the compile error. Building here first means a broken
+# tree fails immediately, before the client dev server spends time booting.
 info "building the API…"
 (cd "$SERVER" && go build -o ./tmp/main .) || die "the API failed to build."
 
@@ -132,12 +150,12 @@ start() {
 	PIDS+=("$!")
 }
 
-info "API      http://localhost:$API_PORT  ${C_DIM}(proxied, no need to open directly)${C_RESET}"
-info "APP      http://localhost:$CLIENT_PORT"
+info "API      http://localhost:$API_PORT"
+info "APP      $CLIENT_ORIGIN"
 printf '%sPress Ctrl+C to stop both.%s\n\n' "$C_DIM" "$C_RESET"
 
-start "api" "$C_GREEN" "$SERVER" ./tmp/main
-start "web" "$C_BLUE" "$CLIENT" pnpm start
+start "api" "$C_GREEN" "$SERVER" go tool air
+start "web" "$C_BLUE" "$CLIENT" pnpm dev
 
 # If either service dies, take the other down too rather than leaving half a
 # stack running and looking healthy.
