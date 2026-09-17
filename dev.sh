@@ -45,6 +45,7 @@ need() { command -v "$1" >/dev/null 2>&1 || die "$1 is not on PATH. $2"; }
 
 need go "Install Go, or see server/ for the required version."
 need pnpm "Install pnpm — npm/yarn are not supported here (see client/package.json packageManager)."
+need lsof "Install lsof — it is used to find and stop whatever is holding the dev ports."
 
 [[ -d "$CLIENT/node_modules" ]] || die "client/node_modules is missing. Run: (cd client && pnpm install)"
 [[ -f "$SERVER/.env" ]] || die "server/.env is missing. Run: cp server/.env.example server/.env  (then fill in the Supabase and Postgres values)"
@@ -82,10 +83,33 @@ esac
 
 port_busy() { (exec 3<>"/dev/tcp/127.0.0.1/$1") >/dev/null 2>&1; }
 
-port_busy "$CLIENT_PORT" && die "port $CLIENT_PORT is already in use (the Vite dev server needs it).
-       Find it with: lsof -i :$CLIENT_PORT"
-port_busy "$API_PORT" && die "port $API_PORT is already in use (the Go API needs it).
-       Find it with: lsof -i :$API_PORT"
+# Frees a port by stopping whatever is listening on it — usually a dev server
+# left behind by an earlier run. SIGTERM first so it can shut down cleanly, then
+# SIGKILL for anything still holding the port a couple of seconds later.
+free_port() {
+	local port=$1 name=$2 pids
+	port_busy "$port" || return 0
+
+	pids="$(lsof -t -iTCP:"$port" -sTCP:LISTEN 2>/dev/null | sort -u | tr '\n' ' ')"
+	[[ -n "${pids// /}" ]] || die "port $port is in use (the $name needs it), but no process could be found to stop.
+       It may belong to another user. Find it with: sudo lsof -i :$port"
+
+	warn "port $port is in use — stopping PID(s) ${pids% } so the $name can start."
+	kill -TERM $pids 2>/dev/null || true
+
+	for _ in 1 2 3 4 5 6 7 8 9 10; do
+		port_busy "$port" || return 0
+		sleep 0.2
+	done
+
+	kill -KILL $pids 2>/dev/null || true
+	sleep 0.3
+	port_busy "$port" && die "port $port is still in use after killing PID(s) ${pids% }."
+	return 0
+}
+
+free_port "$CLIENT_PORT" "Vite dev server"
+free_port "$API_PORT" "Go API"
 
 # Postgres is checked rather than assumed: the API calls AutoMigrate at boot and
 # exits on failure, so an unreachable database looks like the API "not starting".
