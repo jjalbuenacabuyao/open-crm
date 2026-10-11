@@ -28,7 +28,10 @@ export class ApiError extends Error {
  * Credentials are deliberately not sent: the API allows no cookies and
  * authenticates from the Authorization header alone.
  */
-async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function apiFetch<T>(
+  path: string,
+  init: RequestInit = {},
+): Promise<T> {
   const token = await accessToken()
 
   const response = await fetch(apiUrl(path), {
@@ -51,6 +54,11 @@ async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
       response.status,
       body?.error ?? `Request failed with status ${response.status}`,
     )
+  }
+
+  // DELETE answers 204 with no body to parse.
+  if (response.status === 204) {
+    return undefined as T
   }
 
   return (await response.json()) as T

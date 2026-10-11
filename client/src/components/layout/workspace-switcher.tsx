@@ -1,6 +1,15 @@
 import { useState } from 'react'
-import { ChevronsUpDown, Plus } from 'lucide-react'
+import { useMatchRoute, useNavigate } from '@tanstack/react-router'
+import { Check, ChevronsUpDown, Plus } from 'lucide-react'
 
+import { CreateWorkspaceForm } from '#/components/crm/create-workspace-form.tsx'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '#/components/ui/dialog.tsx'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,27 +24,41 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '#/components/ui/sidebar.tsx'
+import { setActiveWorkspace, useWorkspaces } from '#/lib/workspace.ts'
 
-import type { NavItem } from '#/components/layout/nav-data.ts'
-
-/**
- * The workspace picker at the top of the sidebar.
- *
- * The selection is local state only. `domain.Workspace` exists server-side but
- * has no endpoint, so there is nothing to persist to yet — wire this to the API
- * rather than adding a second source of truth when that lands.
- */
-export function WorkspaceSwitcher({ workspaces }: { workspaces: NavItem[] }) {
-  const { isMobile } = useSidebar()
-  const [activeWorkspace, setActiveWorkspace] = useState<NavItem | undefined>(
-    workspaces[0],
+function WorkspaceMark({
+  name,
+  className,
+}: {
+  name: string
+  className: string
+}) {
+  return (
+    <div className={className} aria-hidden="true">
+      {name.trim().charAt(0).toUpperCase() || '?'}
+    </div>
   )
+}
 
-  if (!activeWorkspace) {
+/** The workspace picker at the top of the sidebar. */
+export function WorkspaceSwitcher() {
+  const { isMobile } = useSidebar()
+  const { workspaces, active } = useWorkspaces()
+  const [creating, setCreating] = useState(false)
+  const matchRoute = useMatchRoute()
+  const navigate = useNavigate()
+
+  if (!active) {
     return null
   }
 
-  const ActiveIcon = activeWorkspace.icon
+  // A detail page belongs to the workspace it was opened in; after switching,
+  // its record would 404, so step back to the section's list.
+  function leaveDetailPage() {
+    if (matchRoute({ to: '/companies/$companyId' })) {
+      void navigate({ to: '/companies' })
+    }
+  }
 
   return (
     <SidebarMenu>
@@ -46,13 +69,12 @@ export function WorkspaceSwitcher({ workspaces }: { workspaces: NavItem[] }) {
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                <ActiveIcon className="size-4" />
-              </div>
+              <WorkspaceMark
+                name={active.name}
+                className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg text-sm font-semibold"
+              />
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">
-                  {activeWorkspace.title}
-                </span>
+                <span className="truncate font-medium">{active.name}</span>
                 <span className="truncate text-xs">open-crm</span>
               </div>
               <ChevronsUpDown className="ml-auto" />
@@ -69,25 +91,33 @@ export function WorkspaceSwitcher({ workspaces }: { workspaces: NavItem[] }) {
               Workspaces
             </DropdownMenuLabel>
 
-            {workspaces.map((workspace) => {
-              const Icon = workspace.icon
-
-              return (
-                <DropdownMenuItem
-                  key={workspace.title}
-                  className="gap-2 p-2"
-                  onSelect={() => setActiveWorkspace(workspace)}
-                >
-                  <div className="flex size-6 items-center justify-center rounded-md border">
-                    <Icon className="size-3.5 shrink-0" />
-                  </div>
-                  {workspace.title}
-                </DropdownMenuItem>
-              )
-            })}
+            {workspaces.map((workspace) => (
+              <DropdownMenuItem
+                key={workspace.id}
+                className="gap-2 p-2"
+                onSelect={() => {
+                  if (workspace.id !== active.id) {
+                    setActiveWorkspace(workspace.id)
+                    leaveDetailPage()
+                  }
+                }}
+              >
+                <WorkspaceMark
+                  name={workspace.name}
+                  className="flex size-6 shrink-0 items-center justify-center rounded-md border text-xs font-medium"
+                />
+                <span className="truncate">{workspace.name}</span>
+                {workspace.id === active.id ? (
+                  <Check className="ml-auto size-4" />
+                ) : null}
+              </DropdownMenuItem>
+            ))}
 
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-2 p-2">
+            <DropdownMenuItem
+              className="gap-2 p-2"
+              onSelect={() => setCreating(true)}
+            >
               <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
                 <Plus className="size-4" />
               </div>
@@ -97,6 +127,23 @@ export function WorkspaceSwitcher({ workspaces }: { workspaces: NavItem[] }) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        <Dialog open={creating} onOpenChange={setCreating}>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>New workspace</DialogTitle>
+              <DialogDescription>
+                Workspaces keep separate sets of companies, contacts, and deals.
+              </DialogDescription>
+            </DialogHeader>
+            <CreateWorkspaceForm
+              onCreated={() => {
+                setCreating(false)
+                leaveDetailPage()
+              }}
+            />
+          </DialogContent>
+        </Dialog>
       </SidebarMenuItem>
     </SidebarMenu>
   )

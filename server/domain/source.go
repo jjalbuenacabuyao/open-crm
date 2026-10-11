@@ -2,11 +2,11 @@ package domain
 
 import "github.com/google/uuid"
 
-// Describes how a Company is entered to the CRM
-// e.g. Referral. indound, cold outreach, etc.
+// Source describes how a company or contact entered the CRM, e.g. referral,
+// inbound, cold outreach.
 type Source struct {
 	Base
-	Name string `json:"name"`
+	Name string `gorm:"not null" json:"name"`
 
-	WorkspaceID uuid.UUID `json:"workspaceId"`
+	WorkspaceID uuid.UUID `gorm:"type:uuid;not null;index" json:"workspaceId"`
 }

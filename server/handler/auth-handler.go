@@ -78,6 +78,39 @@ func (h *AuthHandler) Me(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
+// RequireUser is middleware that resolves the local user for the verified
+// Supabase identity and stores it for currentUser. It must run after
+// SupabaseAuth. A missing row is provisioned exactly as Me would, so a CRM
+// request that races the client's first /auth/me call still succeeds.
+func (h *AuthHandler) RequireUser(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	supabaseUserID, ok := ctxkeys.SupabaseUserIDFrom(ctx)
+	if !ok {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Missing authenticated user"})
+		return
+	}
+
+	user, err := h.users.FindBySupabaseID(ctx, supabaseUserID)
+	if errors.Is(err, repository.ErrUserNotFound) {
+		params, ok := h.identity(c)
+		if !ok {
+			c.Abort()
+			return
+		}
+		params.FirstName, params.LastName = namesFromClaims(c)
+		user, _, err = h.users.EnsureFromSupabase(ctx, params)
+	}
+	if err != nil {
+		writeUserError(c, err)
+		c.Abort()
+		return
+	}
+
+	c.Set(userContextKey, user)
+	c.Next()
+}
+
 // identity reads the verified identity off the request context. It writes the
 // error response itself and reports false when the request cannot proceed.
 func (h *AuthHandler) identity(c *gin.Context) (repository.EnsureUserParams, bool) {

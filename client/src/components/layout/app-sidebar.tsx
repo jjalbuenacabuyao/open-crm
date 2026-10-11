@@ -9,11 +9,7 @@ import { NavMain } from '#/components/layout/nav-main.tsx'
 import { NavSecondary } from '#/components/layout/nav-secondary.tsx'
 import { NavUser } from '#/components/layout/nav-user.tsx'
 import { WorkspaceSwitcher } from '#/components/layout/workspace-switcher.tsx'
-import {
-  NAV_MAIN,
-  NAV_SECONDARY,
-  WORKSPACES,
-} from '#/components/layout/nav-data.ts'
+import { NAV_MAIN, NAV_SECONDARY } from '#/components/layout/nav-data.ts'
 
 import type { ComponentProps } from 'react'
 
@@ -21,7 +17,7 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <WorkspaceSwitcher workspaces={WORKSPACES} />
+        <WorkspaceSwitcher />
       </SidebarHeader>
 
       <SidebarContent>

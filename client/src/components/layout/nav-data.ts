@@ -1,12 +1,11 @@
 import {
-  Briefcase,
   Building2,
   Handshake,
   LayoutDashboard,
   LifeBuoy,
   ListTodo,
   Send,
-  Target,
+  Settings,
   Users,
 } from 'lucide-react'
 
@@ -16,10 +15,10 @@ import type { LucideIcon } from 'lucide-react'
 /**
  * Navigation config for the sidebar.
  *
- * Only `/` is routed today. `to` is typed against the generated route tree, so
- * an entry cannot point at a path that does not exist — the rest are the
- * intended CRM sections and render as non-navigating rows until their features
- * land. Give one a `to` the moment its route file appears.
+ * `to` is typed against the generated route tree, so an entry cannot point at
+ * a path that does not exist. Entries without one are planned sections that
+ * render as non-navigating rows until their features land — give one a `to`
+ * the moment its route file appears.
  */
 
 export interface NavLink {
@@ -36,33 +35,30 @@ export const NAV_MAIN: NavItem[] = [
   { title: 'Dashboard', to: '/', icon: LayoutDashboard },
   {
     title: 'Contacts',
+    to: '/contacts',
     icon: Users,
-    items: [{ title: 'All contacts' }, { title: 'Segments' }],
+    items: [{ title: 'All contacts', to: '/contacts' }, { title: 'Segments' }],
   },
   {
     title: 'Companies',
+    to: '/companies',
     icon: Building2,
-    items: [{ title: 'All companies' }, { title: 'Industries' }],
+    items: [
+      { title: 'All companies', to: '/companies' },
+      { title: 'Industries', to: '/settings' },
+    ],
   },
   {
     title: 'Deals',
+    to: '/deals',
     icon: Handshake,
-    items: [{ title: 'Pipeline' }, { title: 'Forecast' }],
+    items: [{ title: 'Pipeline', to: '/deals' }, { title: 'Forecast' }],
   },
   { title: 'Tasks', icon: ListTodo },
 ]
 
 export const NAV_SECONDARY: NavItem[] = [
+  { title: 'Settings', to: '/settings', icon: Settings },
   { title: 'Support', icon: LifeBuoy },
   { title: 'Feedback', icon: Send },
-]
-
-/**
- * Placeholder until workspaces are fetched from the API. `domain.Workspace`
- * already exists server-side and is migrated; there is no endpoint for it yet.
- */
-export const WORKSPACES: NavItem[] = [
-  { title: 'Sales', icon: Briefcase },
-  { title: 'Partnerships', icon: Handshake },
-  { title: 'Success', icon: Target },
 ]
